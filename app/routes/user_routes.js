@@ -1,6 +1,7 @@
 let ObjectID = require('mongodb').ObjectID;
 let bcrypt = require('bcrypt');
 const saltRounds = 10;
+const { check, validationResult } = require('express-validator/check');
 
 module.exports = function(app, db) {
     app.get('/users', (req, res) => {
@@ -13,10 +14,19 @@ module.exports = function(app, db) {
         });
     });
 
-    app.post('/users', (req, res) => {
-        const password = bcrypt.hashSync(req.body.password, saltRounds);
-        console.log(password);
-        const user = {name: req.body.name, email: req.body.email, password: password};
+    app.post('/users', [
+            check('email', 'please use a valid email address').isEmail(),
+            check('password', 'you password is invalid. It must be at least 6 characters and include both numbers and letters').isLength({min: 6}).matches(/^(?=.*[0-9])(?=.*[a-zA-Z])([a-zA-Z0-9]+)$/),
+            check('name', 'you must include your name').exists()
+        ], (req, res) => {
+        let email = req.body.email;
+        let name = req.body.name;
+        let password = bcrypt.hashSync(req.body.password, saltRounds);
+        const user = {name: req.body.name, email: email, password: password};
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() });
+        }
         db.collection('users').insert(user, (err, result) => {
             if (err) {
                 res.send({'error': 'an error occured when adding a user'});
