@@ -15,10 +15,11 @@ module.exports = function(app, db) {
     });
 
     app.post('/users', [
-            check('email', 'please use a valid email address').isEmail(),
-            check('password', 'you password is invalid. It must be at least 6 characters and include both numbers and letters').isLength({min: 6}).matches(/^(?=.*[0-9])(?=.*[a-zA-Z])([a-zA-Z0-9]+)$/),
-            check('name', 'you must include your name').exists()
-        ], (req, res) => {
+        check('email', 'please use a valid email address').isEmail(),
+        // check('email', 'this email already exists in our database. Please try again with a new email')
+        check('password', 'you password is invalid. It must be at least 6 characters and include at least one number and one letter').isLength({min: 6}).matches(/^(?=.*[0-9])(?=.*[a-zA-Z])([a-zA-Z0-9]+)$/),
+        check('name', 'you must include your name and it can only contain alpha-numeric characters').exists().isAlpha()
+    ], (req, res) => {
         let email = req.body.email;
         let name = req.body.name;
         let password = bcrypt.hashSync(req.body.password, saltRounds);
